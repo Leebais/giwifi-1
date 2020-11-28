@@ -16,32 +16,34 @@ HEADERS = {
     'cache-control': 'max-age=0'
 }
 
-PARSER = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter, 
-    description='GiWiFi认证登录脚本', 
-    epilog='(c) 2018 journey.ad')
+PARSER = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter,
+                                 description='GiWiFi认证登录脚本',
+                                 epilog='(c) 2018 journey.ad')
 PARSER.add_argument('-g', '--gateway', type=str, help='网关IP')
 PARSER.add_argument('-u', '--username', type=str, help='用户名')
 PARSER.add_argument('-p', '--password', type=str, help='密码')
 PARSER.add_argument('-q', '--quit', action='store_true', help='登出')
 PARSER.add_argument('-d', '--daemon', action='store_true', help='在后台守护运行')
 PARSER.add_argument('-v', '--verbose', action='store_true', help='额外输出一些技术性信息')
-PARSER.add_argument('-V', '--version', action='version', 
-        version='giwifi-auth-helper {}'.format(SCRIPT_VERSION))
+PARSER.add_argument('-V', '--version', action='version',
+                    version='giwifi-auth-helper {}'.format(SCRIPT_VERSION))
 
 CONFIG = PARSER.parse_args()
 
-CONFIG.gateway = "172.16.1.2"       #填入网关
-CONFIG.username = "123456"     #填入账号
-CONFIG.password = "654321"      #填入密码
+CONFIG.gateway = "172.16.1.5"  # 填入网关
+CONFIG.username = "15665743363"  # 填入账号
+CONFIG.password = "HCPxrj78"  # 填入密码
+
 
 def main():
     logcat('正在获取网关信息…')
 
     try:
-        authUrl = requests.get('http://%s:8062/redirect' % (CONFIG.gateway), timeout=5).url
+        authUrl = requests.get('http://www.bilibili.com', headers = HEADERS).url
         authParmas = {k: v[0] for k, v in parse_qs(urlparse(authUrl).query).items()}
 
-        loginPage = requests.get('http://login.gwifi.com.cn/cmps/admin.php/api/login/?' + urlparse(authUrl).query, headers=HEADERS, timeout=5).text
+        loginPage = requests.get('http://login.gwifi.com.cn/cmps/admin.php/api/login/?' + urlparse(authUrl).query,
+                                 headers=HEADERS, timeout=5).text
 
         pagetime = re.search(r'name="page_time" value="(.*?)"', loginPage).group(1)
         sign = re.search(r'name="sign" value="(.*?)"', loginPage).group(1)
@@ -61,7 +63,7 @@ def main():
     authState = getAuthState(authParmas, sign)
 
     if CONFIG.quit:
-        logout(authParmas)
+        print(authParmas)
 
     if not authState:
         return
@@ -111,11 +113,13 @@ def main():
             else:
                 logcat('认证失败，提示信息：%s' % (result['info']))
 
+
 def login(data):
     logcat('正在尝试认证…')
 
     try:
-        resp = json.loads(requests.post('http://login.gwifi.com.cn/cmps/admin.php/api/loginaction', data=data, timeout=5).text)
+        resp = json.loads(
+            requests.post('http://login.gwifi.com.cn/cmps/admin.php/api/loginaction', data=data, headers = HEADERS).text)
         result = {
             'status': False,
             'info': None
@@ -132,11 +136,12 @@ def login(data):
 
     except requests.exceptions.Timeout:
         logcat('连接超时，可能已超出上网区间')
-        
+
     finally:
         return result
 
-def getAuthState(authParmas, sign):     #获取认证状态
+
+def getAuthState(authParmas, sign):  # 获取认证状态
     try:
         params = {
             'ip': authParmas['ip'],
@@ -144,9 +149,11 @@ def getAuthState(authParmas, sign):     #获取认证状态
             'sign': sign,
             'callback': ''
         }
-    
-        resp = json.loads(requests.get('http://%s:%s/wifidog/get_auth_state' % (authParmas['gw_address'], authParmas['gw_port']), params=params, timeout=5).text[1:-1])
-            
+
+        resp = json.loads(
+            requests.get('http://%s:%s/wifidog/get_auth_state' % (authParmas['gw_address'], authParmas['gw_port']),
+                         params=params, timeout=5).text[1:-1])
+
     except KeyError:
         logcat('所需参数不存在')
         return False
@@ -163,35 +170,39 @@ def getAuthState(authParmas, sign):     #获取认证状态
     else:
         return False
 
-def printStatus(authParmas, authState):     #打印认证信息
+
+def printStatus(authParmas, authState):  # 打印认证信息
     if not CONFIG.verbose:
         clear()
 
     print(
-'''--------------------------------------------
-SSID:             %s
-AP MAC:           %s
-GateWay:          %s
-IP:               %s
-MAC:              %s
-Station SN:       %s
-Logged:           %s
---------------------------------------------'''
-    % (
+        '''--------------------------------------------
+        SSID:             %s
+        AP MAC:           %s
+        GateWay:          %s
+        IP:               %s
+        MAC:              %s
+        Station SN:       %s
+        Logged:           %s
+        --------------------------------------------'''
+        % (
             authParmas['gw_id'],
             authParmas['apmac'],
             authParmas['gw_address'],
             authParmas['ip'],
             authParmas['mac'],
             authState['station_sn'],
-            'yes' if(authState['auth_state'] == 2) else 'no'
+            'yes' if (authState['auth_state'] == 2) else 'no'
         )
     )
+
 
 def clear():
     os.system('cls' if os.name == 'nt' else 'clear')
 
+
 def logcat(msg, level='I'):
     print('%s %s: %s' % (time.ctime().split(' ')[-2], level, msg))
+
 
 main()
