@@ -31,8 +31,8 @@ PARSER.add_argument('-V', '--version', action='version',
 CONFIG = PARSER.parse_args()
 
 CONFIG.gateway = "172.16.1.5"  # 填入网关
-CONFIG.username = "15665743363"  # 填入账号
-CONFIG.password = "HCPxrj78"  # 填入密码
+CONFIG.username = ""  # 填入账号
+CONFIG.password = ""  # 填入密码
 
 
 def main():
